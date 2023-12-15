@@ -56,6 +56,45 @@ router.get('/getAllBooks',getUserInfo,async (req,res)=>{
     }
 })
 
+router.post('/searchBook',cors(),getUserInfo,async (req,res)=>{
+  try {
+      // var allBooks=await bookModel.find({UserName:req.UserName},{UserName:false});
+      // res.status(200).json({allBooks});
+console.log("Search Text: ",req.body.search)
+      await bookModel.aggregate([
+        { $lookup:
+            {
+               from: "hidelists",
+               localField: "BookISBN",
+               foreignField: "BookISBN",
+               as: "hideList"
+            }
+        },
+        { $lookup:
+          {
+             from: "likelists",
+             localField: "BookISBN",
+             foreignField: "BookISBN",
+             as: "likeList"
+          }
+      },{
+          "$project": {
+            "hideList.UserName":0,
+            "likeList.UserName":0
+          }
+        }
+    ]).then((data)=>{
+      console.log("All Data : ",data);
+      console.log("Filter Data : ",data.filter(x=>(x.UserName==req.UserName) && (x.BookTitle.includes(req.body.search))))
+      res.send(data.filter(x=>(x.UserName==req.UserName) && (x.BookTitle.includes(req.body.search))))
+    });
+
+  } catch (error) {
+      res.status(500).json({messsage:"Internal Server Error 500",error:error.message});
+  }
+})
+
+
 router.post('/getBookById',getUserInfo,async (req,res)=>{
   try {
     const BookISN=req.body.id;
@@ -209,6 +248,7 @@ router.post('/addToLikeList',getUserInfo,async (req, res )=> {
     body("BookTitle","Book Title is required").exists(),
     body("BookAuthor","Book Author is required").exists(),
     body("BookGenre","Book Genre is required").exists(),
+    body("BookSummary","Book Summary is required").exists()
 ],getUserInfo,async (req, res, )=> {
   var error=validationResult(req);
   if(!error.isEmpty()){
@@ -227,18 +267,20 @@ router.post('/addToLikeList',getUserInfo,async (req, res )=> {
         BookTitle:req.body.BookTitle,
         BookAuthor:req.body.BookAuthor,
         BookGenre:req.body.BookGenre,
+        BookSummary:req.body.BookSummary,
+        BookLink:req.body.BookLink,
         UserName:req.UserName
     })
     await book.save().then((data)=>{
       res.status(200).json({success:true,message:"Book added successfully!"});
     })
     .catch((err)=>{
-      res.status(500).json({error:err.message});
+      res.status(500).json({error:err});
     });
   }
  }
   catch (error) {
-    res.status(500).json({error:error.message});
+    res.status(500).json({error:error});
   }
 });
 
@@ -297,6 +339,7 @@ router.post("/updateBook",[
   body("Title","Book Title is required").exists(),
   body("Author","Book Author is required").exists(),
   body("Gerne","Book Genre is required").exists(),
+  body("Summary","Book Summary is required").exists(),
 ],async function (req, res, next) {
   const errors=validationResult(req);
   if(!errors.isEmpty())
@@ -314,14 +357,6 @@ router.post("/updateBook",[
   } 
   else
   {
-    const book=new bookModel({
-      UserName:req.UserName,
-      BookGenre:req.body.Gerne,
-      BookAuthor:req.body.Author,
-      BookTitle:req.body.Title,
-      BookISBN:req.body.ISBN
-    });
-  console.log("New Data: ",book);
     bookModel.updateOne({BookISBN:req.body.ISBN},
       {
         $set:{
@@ -329,7 +364,9 @@ router.post("/updateBook",[
           BookGenre:req.body.Gerne,
           BookAuthor:req.body.Author,
           BookTitle:req.body.Title,
-          BookISBN:req.body.ISBN
+          BookISBN:req.body.ISBN,
+          BookSummary:req.body.Summary,
+          BookLink:req.body.Link
         }
       })
   .then((data) => {

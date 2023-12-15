@@ -17,6 +17,13 @@ const BookSchema=new mongoose.Schema({
         type:String,
         required:true
     },
+    BookSummary:{
+        type:String,
+        required:true
+    },
+    BookLink:{
+        type:String
+    },
     UserName:{
         type:String,
         required:true
