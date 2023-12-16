@@ -47,8 +47,8 @@ router.get('/getAllBooks',getUserInfo,async (req,res)=>{
           }
       ]).then((data)=>{
         console.log(data);
-        console.log(data.filter(x=>x.UserName==req.UserName))
-        res.send(data.filter(x=>x.UserName==req.UserName))
+        console.log(data)
+        res.send(data)
       });
 
     } catch (error) {
@@ -85,8 +85,7 @@ console.log("Search Text: ",req.body.search)
         }
     ]).then((data)=>{
       console.log("All Data : ",data);
-      console.log("Filter Data : ",data.filter(x=>(x.UserName==req.UserName) && (x.BookTitle.includes(req.body.search))))
-      res.send(data.filter(x=>(x.UserName==req.UserName) && (x.BookTitle.includes(req.body.search))))
+      res.send(data.filter(x=>x.BookTitle.includes(req.body.search)))
     });
 
   } catch (error) {
@@ -140,7 +139,7 @@ router.get('/getAllHideBooks',getUserInfo,async (req,res)=>{
             "bookData.UserName":0,
           }
         }
-    ]).then((data)=>res.send(data.filter(x=>x.UserName==req.UserName)));
+    ]).then((data)=>res.send(data));
 
   } catch (error) {
       res.status(500).json({messsage:"Internal Server Error 500",error:error.message});
@@ -163,7 +162,7 @@ router.get('/getAllLikeBooks',getUserInfo,async (req,res)=>{
             "bookData.UserName":0,
           }
         }
-    ]).then((data)=>res.send(data.filter(x=>x.UserName==req.UserName)));
+    ]).then((data)=>res.send(data));
 
   } catch (error) {
       res.status(500).json({messsage:"Internal Server Error 500",error:error.message});
