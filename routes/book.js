@@ -4,7 +4,7 @@ var bookModel=require('../models/Book');
 var hideBookModel=require('../models/HideList');
 var likeBookModel=require('../models/LikeList');
 var commentModel=require('../models/BookComment');
-
+var path = require('path');
 const cors=require("cors");
 var getUserInfo=require('../middlewares/getUserInfo');
 const {body,validationResult}=require('express-validator');
@@ -242,46 +242,63 @@ router.post('/addToLikeList',getUserInfo,async (req, res )=> {
   }
   });
 
-  router.post('/addBook',[
-    body("BookISBN","BookISBN is required").exists(),
-    body("BookTitle","Book Title is required").exists(),
-    body("BookAuthor","Book Author is required").exists(),
-    body("BookGenre","Book Genre is required").exists(),
-    body("BookSummary","Book Summary is required").exists()
-],getUserInfo,async (req, res, )=> {
-  var error=validationResult(req);
-  if(!error.isEmpty()){
-    res.status(400).json({error:error.array()});
+
+const multer=require('multer');
+router.use(express.static(path.join(__dirname, 'public/uploads')))
+
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    console.log("File Path in : ",path.join(__dirname, '../public/uploads'));
+    cb(null, path.join(__dirname, '../public/uploads'))
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now()+path.extname(file.originalname))
   }
-  try { 
-    const findBookByISBN=await bookModel.find({BookISBN:req.body.BookISBN,UserName:req.UserName})
-    console.log("Book Data",findBookByISBN);
-    if(findBookByISBN.length>0){
-      res.status(200).json({success:false,message:"Book with this ISBN already exists in db!"});
-    }
-    else
-    {
-    const book=new bookModel({
-        BookISBN:req.body.BookISBN,
-        BookTitle:req.body.BookTitle,
-        BookAuthor:req.body.BookAuthor,
-        BookGenre:req.body.BookGenre,
-        BookSummary:req.body.BookSummary,
-        BookLink:req.body.BookLink,
-        UserName:req.UserName
-    })
-    await book.save().then((data)=>{
-      res.status(200).json({success:true,message:"Book added successfully!"});
-    })
-    .catch((err)=>{
-      res.status(500).json({error:err});
-    });
+})
+
+var upload = multer({ storage: storage }).single('photo')
+
+
+router.post('/addBook',[
+  body("BookISBN","BookISBN is required").exists(),
+  body("BookTitle","Book Title is required").exists(),
+  body("BookAuthor","Book Author is required").exists(),
+  body("BookGenre","Book Genre is required").exists(),
+  body("BookSummary","Book Summary is required").exists()
+],upload,getUserInfo,async (req, res, )=> {
+try { 
+  const findBookByISBN=await bookModel.find({BookISBN:req.body.BookISBN})
+  console.log("Book Data",findBookByISBN);
+  if(findBookByISBN.length>0){
+    res.status(200).json({success:false,message:"Book with this ISBN already exists in db!"});
   }
- }
-  catch (error) {
-    res.status(500).json({error:error});
-  }
+  else
+  {
+      const book=new bookModel({
+      BookISBN:req.body.BookISBN,
+      BookTitle:req.body.BookTitle,
+      BookAuthor:req.body.BookAuthor,
+      BookGenre:req.body.BookGenre,
+      BookSummary:req.body.BookSummary,
+      BookImage:req.file.filename,
+      BookLink:req.body.BookLink,
+      UserName:req.UserName
+  })
+  console.log(book)
+  await book.save().then((data)=>{
+    res.status(200).json({success:true,message:"Book added successfully!"});
+  })
+  .catch((err)=>{
+    res.status(500).json({error:err});
+  });
+}
+}
+catch (error) {
+  res.status(500).json({error:error});
+}
 });
+
+
 
 router.post('/addBookComment',getUserInfo,async (req, res, )=> {
 try { 
