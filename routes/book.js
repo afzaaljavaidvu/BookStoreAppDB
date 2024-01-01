@@ -298,7 +298,61 @@ catch (error) {
 }
 });
 
+var storage1 = multer.diskStorage({
+  destination: function (req, file, cb) {
+    console.log("File Path in : ",path.join(__dirname, '../public/uploads'));
+    cb(null, path.join(__dirname, '../public/uploads'))
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now()+path.extname(file.originalname))
+  }
+})
 
+var upload1 = multer({ storage: storage1 }).array('images')
+
+router.post('/addBookWithImage',[
+  body("BookISBN","BookISBN is required").exists(),
+  body("BookTitle","Book Title is required").exists(),
+  body("BookAuthor","Book Author is required").exists(),
+  body("BookGenre","Book Genre is required").exists(),
+  body("BookSummary","Book Summary is required").exists()
+],upload1,getUserInfo,async (req, res, )=> {
+try { 
+  const findBookByISBN=await bookModel.find({BookISBN:req.body.BookISBN})
+  console.log("Book Data",findBookByISBN);
+  if(findBookByISBN.length>0){
+    res.status(200).json({success:false,message:"Book with this ISBN already exists in db!"});
+  }
+  else
+  {
+    const image_names = [];
+    req.files.forEach(img => {
+      image_names.push(img.filename)
+    });
+    console.log(image_names)
+      const book=new bookModel({
+      BookISBN:req.body.BookISBN,
+      BookTitle:req.body.BookTitle,
+      BookAuthor:req.body.BookAuthor,
+      BookGenre:req.body.BookGenre,
+      BookSummary:req.body.BookSummary,
+      BookImage:image_names,
+      BookLink:req.body.BookLink,
+      UserName:req.UserName
+  })
+  console.log(book)
+  await book.save().then((data)=>{
+    res.status(200).json({success:true,message:"Book added successfully!"});
+  })
+  .catch((err)=>{
+    res.status(500).json({error:err});
+  });
+}
+}
+catch (error) {
+  res.status(500).json({error:error});
+}
+});
 
 router.post('/addBookComment',getUserInfo,async (req, res, )=> {
 try { 

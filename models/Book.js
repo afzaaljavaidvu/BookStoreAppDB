@@ -21,9 +21,7 @@ const BookSchema=new mongoose.Schema({
         type:String,
         required:true
     },
-    BookImage:{
-        type:String
-    },
+    BookImage:[String],
     BookLink:{
         type:String
     },

@@ -7,6 +7,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var emailRouter = require('./routes/email');
 var bookRouter=require('./routes/book');
+const bodyParser = require('body-parser');
 
 var app = express();
 require('dotenv').config();
@@ -18,15 +19,16 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public/uploads')));
+app.use(express.static(path.join(__dirname, 'public')));
 const cors=require("cors");
 const corsOptions ={
    origin:'*', 
    credentials:true,
    optionSuccessStatus:200,
 }
-app.use(cors(corsOptions)) 
-
+app.use(cors()) 
+app.use(bodyParser.json({limit: "50mb"}));
+app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/book', bookRouter);
